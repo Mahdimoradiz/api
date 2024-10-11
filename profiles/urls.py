@@ -10,4 +10,5 @@ urlpatterns = [
     path('unfollow/<int:user_id>/', views.unfollow_user, name='unfollow_user'),
     path('blocked-users/', views.BlockedListView.as_view(), name='blocked-list'), 
     path('search-users/', views.ProfileSearchView.as_view(), name='profile-search'),
+    path('profile/<int:user_id>/following-status/', views.following_status, name='following_status'),
 ]

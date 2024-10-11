@@ -21,7 +21,7 @@ from post.serializers import (
     CommentSerializer,
     ReelSerializer,
     ReplySerializer,
-    AddPostSerializer,
+    UploadPostSerializer
 )
 
 
@@ -44,14 +44,13 @@ class PostDetailView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class PostUploadView(viewsets.ModelViewSet):
-    queryset = Post.objects.all()
-    serializer_class = AddPostSerializer
+class UploadPostView(APIView):
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request, *args, **kwargs):
         post_type = request.data.get('post_type', 'feed')
         limits = settings.VIDEO_LIMITS.get(post_type, settings.VIDEO_LIMITS['feed'])
+        print(f"Token: {request.headers.get('Authorization')}")
 
         # Check if the total size of uploaded files exceeds 500 MB
         total_size = sum(f.size for f in request.FILES.values())
@@ -61,7 +60,7 @@ class PostUploadView(viewsets.ModelViewSet):
         # Check file types
         for f in request.FILES.values():
             if f.content_type not in settings.ALLOWED_FILE_TYPES:
-                return Response({"detail": "Unsupported file type"}) 
+                return Response({"detail": "Unsupported file type"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Check video duration if necessary
         for f in request.FILES.values():
@@ -70,16 +69,17 @@ class PostUploadView(viewsets.ModelViewSet):
                 if video.duration > limits['duration']:
                     return Response({"detail": "Video duration exceeds limit"}, status=status.HTTP_400_BAD_REQUEST)
 
-
-        serializer = self.get_serializer(data=request.data)
+        # Serialize and save the post
+        serializer = UploadPostSerializer(data=request.data)
         if serializer.is_valid():
             try:
-                serializer.save()
+                serializer.save(user=request.user)  # Assure that the user is set correctly
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             except Exception as e:
                 return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+      
         
 
 class LikeCreateDestroyView(generics.GenericAPIView):

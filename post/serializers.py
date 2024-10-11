@@ -54,18 +54,33 @@ class ReplySerializer(serializers.ModelSerializer):
 class PostSerializer(ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
     profile_image = serializers.ImageField(source='user.profiles.picture', read_only=True)
-    
-    
+    like_count = serializers.SerializerMethodField() 
+    comment_count = serializers.SerializerMethodField() 
+    save_count = serializers.SerializerMethodField() 
+
     class Meta:
         model = Post
-        fields = ['id', 'description', 'created_at', 'updated_at', 'file', 'username', 'profile_image']
+        fields = ['id', 'description', 'created_at', 'updated_at', 'file', 'username', 'profile_image', 'like_count', 'comment_count', 'save_count']
 
+    def get_like_count(self, obj):
+        return Like.objects.filter(post=obj).count()
+    
+    def get_comment_count(self, obj):
+        return Comment.objects.filter(post=obj).count()
+    
+    def get_save_count(self, obj):
+        return Save.objects.filter(post=obj).count()
+    
+    
+class LikeSerializer(serializers.ModelSerializer):
+    like_count = serializers.SerializerMethodField()
 
-
-class LikeSerializer(ModelSerializer):
     class Meta:
         model = Like
-        fields = ['id', 'post', 'user', 'created_at']
+        fields = ['id', 'post', 'user', 'created_at', 'like_count']
+
+    def get_like_count(self, obj):
+        return Like.objects.filter(post=obj.post).count()
 
 
 class SavePostSerializer(ModelSerializer):
@@ -94,8 +109,8 @@ class CommentSerializer(ModelSerializer):
         
     
 
-
-class AddPostSerializer(ModelSerializer):
+class UploadPostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = "__all__"
+        fields = ['id', 'user', 'description', 'file', 'post_type', 'created_at']
+        read_only_fields = ['user', 'created_at']

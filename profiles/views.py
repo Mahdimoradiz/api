@@ -92,6 +92,21 @@ def unfollow_user(request, user_id):
     return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
 
 
+
+@api_view(['GET'])
+def following_status(request, user_id):
+    if request.user.is_authenticated:
+        try:
+            followed_user = User.objects.get(id=user_id)
+            is_following = Follow.objects.filter(user=request.user, followed_user=followed_user).exists()
+            return Response({"isFollowing": is_following}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+    return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+
+
 class ProfileEditView(APIView):
     def put(self, request, slug):
         if not request.user.is_authenticated:
