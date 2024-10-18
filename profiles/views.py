@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from .models import Profile, Block
-from .serializers import ProfileSerializer, UserSerializer
+from .serializers import CreateProfileSerializer, ProfileSerializer, UserSerializer
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import viewsets
@@ -159,3 +159,14 @@ class SearchUser(APIView):
             serializer = ProfileSerializer(profiles, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response([], status=status.HTTP_200_OK)
+    
+    
+    
+
+class CreateProfileView(APIView):
+    def post(self, request):
+        serializer = CreateProfileSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

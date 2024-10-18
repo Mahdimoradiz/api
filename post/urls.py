@@ -15,5 +15,4 @@ urlpatterns = [
     path('<int:post_id>/comments/add/', views.AddCommentView.as_view(), name='comments_add'),  
     path('reel/', views.ReelListView.as_view(), name="reel_list"),
     path('comment/<int:comment_id>/reply/', views.AddReplyView.as_view(), name='add-reply'),
-
 ]

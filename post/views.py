@@ -1,3 +1,5 @@
+from django.db.models import Max, Min
+import random
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from rest_framework.views import APIView
@@ -26,12 +28,12 @@ from post.serializers import (
 
 
 class PostListView(APIView):
-    pagination_class = PageNumberPagination  
+    pagination_class = PageNumberPagination
 
     def get(self, request):
         posts = Post.objects.filter(post_type='post')
-        paginator = self.pagination_class()  
-        paginator.page_size = 100 
+        paginator = self.pagination_class()
+        paginator.page_size = 3
         result_page = paginator.paginate_queryset(posts, request)
         serializer = PostSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
@@ -39,9 +41,9 @@ class PostListView(APIView):
 
 class PostDetailView(APIView):
     def get(self, request, id):
-            post = get_object_or_404(Post, id=id)
-            serializer = PostSerializer(post)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+        post = get_object_or_404(Post, id=id)
+        serializer = PostSerializer(post)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class UploadPostView(APIView):
@@ -55,8 +57,9 @@ class UploadPostView(APIView):
         # Check if the total size of uploaded files exceeds 500 MB
         total_size = sum(f.size for f in request.FILES.values())
         if total_size > 500 * 1024 * 1024:  # 500 MB in bytes
-            return Response({"detail": "The file size is larger than 500 MB"}, status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
-        
+            return Response({"detail": "The file size is larger than 500 MB"},
+                            status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
+
         # Check file types
         for f in request.FILES.values():
             if f.content_type not in settings.ALLOWED_FILE_TYPES:
@@ -79,14 +82,13 @@ class UploadPostView(APIView):
                 return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-      
-        
+
 
 class LikeCreateDestroyView(generics.GenericAPIView):
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def post(self, request, *args, **kwargs):
         global post_id
         post_id = request.data.get('post')
@@ -102,7 +104,7 @@ class LikeCreateDestroyView(generics.GenericAPIView):
 
     def delete(self, request, *args, **kwargs):
         user = request.user
-        post = Post.objects.get(id=post_id)   
+        post = Post.objects.get(id=post_id)
 
         try:
             like = Like.objects.get(post=post, user=user)
@@ -112,17 +114,23 @@ class LikeCreateDestroyView(generics.GenericAPIView):
             return Response({"detail": "like not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
+class RandomPostPagination(PageNumberPagination):
+    page_size = 3
+
 
 class ExploreListView(ListAPIView):
-    queryset = Post.objects.all().order_by('?')[:10]
     serializer_class = PostSerializer
+    pagination_class = RandomPostPagination
+
+    def get_queryset(self):
+        return Post.objects.order_by('?')
 
 
 class SavePostView(generics.GenericAPIView):
     queryset = Save.objects.all()
     serializer_class = SavePostSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def post(self, request, *args, **kwargs):
         global post_id
         post_id = request.data.get('post')
@@ -138,7 +146,7 @@ class SavePostView(generics.GenericAPIView):
 
     def delete(self, request, *args, **kwargs):
         user = request.user
-        post = Post.objects.get(id=post_id)   
+        post = Post.objects.get(id=post_id)
 
         try:
             save = Save.objects.get(post=post, user=user)
@@ -148,7 +156,6 @@ class SavePostView(generics.GenericAPIView):
             return Response({"detail": "save not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
-
 class CommentAPIView(APIView):
     def get(self, request, post_id):
         # Use the related name to filter comments for a specific post
@@ -156,14 +163,13 @@ class CommentAPIView(APIView):
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data)
 
-  
-    
+
 class AddCommentView(APIView):
     def post(self, request, post_id):
         print(request.data)
         # Get the post for which the comment is being made
         post = get_object_or_404(Post, id=post_id)
-        
+
         # Check if the user is authenticated
         if not request.user.is_authenticated:
             return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -174,9 +180,8 @@ class AddCommentView(APIView):
             # Assign the user who is making the comment and the post
             comment = serializer.save(post=post, user=request.user)
             return Response(CommentSerializer(comment).data, status=status.HTTP_201_CREATED)
-        
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AddReplyView(APIView):
@@ -194,14 +199,13 @@ class AddReplyView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 class ReelListView(APIView):
-    pagination_class = PageNumberPagination  
+    pagination_class = PageNumberPagination
 
     def get(self, request):
         posts = Post.objects.filter(post_type='reel')
-        paginator = self.pagination_class()  
-        paginator.page_size = 100 
+        paginator = self.pagination_class()
+        paginator.page_size = 3
         result_page = paginator.paginate_queryset(posts, request)
         serializer = PostSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)

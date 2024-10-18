@@ -15,7 +15,7 @@ class Post(models.Model):
         ('post', 'Post'),
         ('carousel', 'Carousel'),
     )
-    
+
     post_type = models.CharField(max_length=10, choices=FILE_TYPES)
 
     def clean(self):
@@ -24,7 +24,7 @@ class Post(models.Model):
         if self.post_type == 'reel':
             if file_size_mb > 500:
                 raise ValidationError('Rails posts cannot be larger than 800MB.')
-            
+
         elif self.post_type == 'post':
             if file_size_mb > 3000:
                 raise ValidationError('Normal mail cannot exceed 3 GB.')
@@ -33,9 +33,8 @@ class Post(models.Model):
             if file_size_mb > 3000:
                 raise ValidationError('Slide post cannot be larger than 3 GB.')
 
-
     def save(self, *args, **kwargs):
-        self.clean() 
+        self.clean()
         super().save(*args, **kwargs)
 
     class Meta:
@@ -49,7 +48,7 @@ class FileUploadBase(models.Model):
     likes = models.IntegerField(default=0)
 
     class Meta:
-        abstract = True  
+        abstract = True
 
     def clean(self):
         if self.file:
@@ -67,7 +66,7 @@ class Comment(FileUploadBase):
 
     def __str__(self):
         return self.user.username
-    
+
     class Meta:
         verbose_name = "comment"
         verbose_name_plural = "comments"
@@ -102,7 +101,7 @@ class Like(models.Model):
 
     def __str__(self):
         return f'{self.user} liked {self.post}'
-    
+
 
 class Save(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
@@ -111,12 +110,12 @@ class Save(models.Model):
 
     def __str__(self):
         return self.user.username
-            
+
     class Meta:
         ordering = ['created_at']
         verbose_name = "save"
         verbose_name_plural = "saves"
-        
-        
+
+
 class TestPost(models.Model):
     post = models.FileField(upload_to="test/file")

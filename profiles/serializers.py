@@ -46,3 +46,10 @@ class BlockSerializer(serializers.ModelSerializer):
     class Meta:
         model = Block
         fields = ['id', 'blocker_username', 'blocked_username', 'block_date']
+
+
+
+class CreateProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = ['user', 'name', 'picture', 'bio']

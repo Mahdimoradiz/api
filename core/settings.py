@@ -88,6 +88,22 @@ TEMPLATES = [
 ]
 
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'nexsocia_mysql',     
+#         'USER': 'nexsocia_mehdi',       
+#         'PASSWORD': 'ahcrD2xs)8?q',
+#         'HOST': 'https://nexsocial.ir/',              
+#         'PORT': '3306',                    
+#         'OPTIONS': {
+#             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+#         },
+#     }
+# }
+
+
+
     # REST_FRAMEWORK = {
     #     # Use Django's standard `django.contrib.auth` permissions,
     #     # or allow read-only access for unauthenticated users.
@@ -108,6 +124,18 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+
+# DATABASES = {
+# 	'default': {
+# 		'ENGINE': 'django.db.backends.mysql',
+# 		'NAME': 'mydb',
+# 		'USER': 'root',
+# 		'PASSWORD': 'admin',
+# 		'HOST':'localhost',
+# 		'PORT':'3306',
+# 	}
+# }
 
 
 # Password validation
@@ -143,14 +171,11 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
-
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
-
-# STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+MEDIA_URL = 'media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -174,8 +199,8 @@ VIDEO_LIMITS = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=1), 
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),    
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=29), 
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=29),    
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'ALGORITHM': 'HS256',                           
@@ -204,8 +229,12 @@ EMAIL_HOST_PASSWORD = 'your_email_password'
 DEFAULT_FROM_EMAIL = 'your_email@gmail.com'
 
 
-
 AUTHENTICATION_BACKENDS = [
     'axes.backends.AxesStandaloneBackend',  
     'django.contrib.auth.backends.ModelBackend', 
 ]
+
+
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+
