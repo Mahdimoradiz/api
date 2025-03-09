@@ -29,7 +29,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -48,6 +47,7 @@ INSTALLED_APPS = [
     'profiles.apps.ProfilesConfig',
     'post.apps.PostConfig',
     'user.apps.UserConfig',
+    'live.apps.LiveConfig',
 ]
 
 
@@ -73,7 +73,7 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates']
+        'DIRS': [BASE_DIR]
         ,
         'APP_DIRS': True,
         'OPTIONS': {
@@ -88,30 +88,6 @@ TEMPLATES = [
 ]
 
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'nexsocia_mysql',     
-#         'USER': 'nexsocia_mehdi',       
-#         'PASSWORD': 'ahcrD2xs)8?q',
-#         'HOST': 'https://nexsocial.ir/',              
-#         'PORT': '3306',                    
-#         'OPTIONS': {
-#             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-#         },
-#     }
-# }
-
-
-
-    # REST_FRAMEWORK = {
-    #     # Use Django's standard `django.contrib.auth` permissions,
-    #     # or allow read-only access for unauthenticated users.
-    #     'DEFAULT_PERMISSION_CLASSES': [
-    #         'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
-    #     ]
-    # }
-
 WSGI_APPLICATION = 'core.wsgi.application'
 
 
@@ -125,16 +101,20 @@ DATABASES = {
     }
 }
 
+# This section is for configuring the production environment
 
 # DATABASES = {
-# 	'default': {
-# 		'ENGINE': 'django.db.backends.mysql',
-# 		'NAME': 'mydb',
-# 		'USER': 'root',
-# 		'PASSWORD': 'admin',
-# 		'HOST':'localhost',
-# 		'PORT':'3306',
-# 	}
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'nexsocia_mysql',
+#         'USER': 'nexsocia_mehdi',
+#         'PASSWORD': 'ahcrD2xs)8?q',
+#         'HOST': 'https://nexsocial.ir/',
+#         'PORT': '3306',
+#         'OPTIONS': {
+#             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+#         },
+#     }
 # }
 
 
@@ -233,7 +213,6 @@ AUTHENTICATION_BACKENDS = [
     'axes.backends.AxesStandaloneBackend',  
     'django.contrib.auth.backends.ModelBackend', 
 ]
-
 
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False

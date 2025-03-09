@@ -9,12 +9,13 @@ from rest_framework import status
 from rest_framework import generics
 from rest_framework import viewsets, status
 from rest_framework.parsers import MultiPartParser, FormParser
-import moviepy.editor as mp
+import moviepy as mp
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import generics
 from rest_framework.generics import ListAPIView
 from django.http import HttpResponse
 from rest_framework.permissions import IsAuthenticated
+import io
 from post.serializers import (
     AddCommentSerializer,
     PostSerializer,
@@ -46,40 +47,51 @@ class PostDetailView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+
+
 class UploadPostView(APIView):
+    permission_classes = [IsAuthenticated]
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request, *args, **kwargs):
-        post_type = request.data.get('post_type', 'feed')
-        limits = settings.VIDEO_LIMITS.get(post_type, settings.VIDEO_LIMITS['feed'])
+        post_type = request.data.get("post_type", "feed")
+        limits = settings.VIDEO_LIMITS.get(post_type, settings.VIDEO_LIMITS["feed"])
         print(f"Token: {request.headers.get('Authorization')}")
 
-        # Check if the total size of uploaded files exceeds 500 MB
+
         total_size = sum(f.size for f in request.FILES.values())
-        if total_size > 500 * 1024 * 1024:  # 500 MB in bytes
+        if total_size > 500 * 1024 * 1024:  # 500MB
             return Response({"detail": "The file size is larger than 500 MB"},
                             status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
 
-        # Check file types
+
         for f in request.FILES.values():
             if f.content_type not in settings.ALLOWED_FILE_TYPES:
-                return Response({"detail": "Unsupported file type"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"detail": "Unsupported file type"},
+                                status=status.HTTP_400_BAD_REQUEST)
 
-        # Check video duration if necessary
+    
         for f in request.FILES.values():
-            if f.content_type.startswith('video/'):
-                video = mp.VideoFileClip(f.temporary_file_path())
-                if video.duration > limits['duration']:
-                    return Response({"detail": "Video duration exceeds limit"}, status=status.HTTP_400_BAD_REQUEST)
+            if f.content_type.startswith("video/"):
+                try:
+                    video_data = io.BytesIO(f.read()) 
+                    video = mp.VideoFileClip(video_data)
+                    if video.duration > limits["duration"]:
+                        return Response({"detail": "Video duration exceeds limit"},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    return Response({"detail": f"Error processing video: {str(e)}"},
+                                    status=status.HTTP_400_BAD_REQUEST)
 
-        # Serialize and save the post
+
         serializer = UploadPostSerializer(data=request.data)
         if serializer.is_valid():
             try:
-                serializer.save(user=request.user)  # Assure that the user is set correctly
+                serializer.save(user=request.user)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             except Exception as e:
-                return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({"detail": str(e)},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 class Post(models.Model):
     file = models.FileField(upload_to="profile/image")
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    description = models.TextField(max_length=300, blank=True, null=True)
+    description = models.TextField(max_length=1300, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateField(auto_now=True)
 
@@ -16,22 +16,22 @@ class Post(models.Model):
         ('carousel', 'Carousel'),
     )
 
-    post_type = models.CharField(max_length=10, choices=FILE_TYPES)
+    post_type = models.CharField(max_length=10, choices=FILE_TYPES, default='post')
 
     def clean(self):
         file_size_mb = self.file.size / (1024 * 1024)
 
         if self.post_type == 'reel':
-            if file_size_mb > 500:
-                raise ValidationError('Rails posts cannot be larger than 800MB.')
+            if file_size_mb > 100:
+                raise ValidationError('Rails posts cannot be larger than 100MB.')
 
         elif self.post_type == 'post':
-            if file_size_mb > 3000:
-                raise ValidationError('Normal mail cannot exceed 3 GB.')
+            if file_size_mb > 100:
+                raise ValidationError('Normal mail cannot exceed 100MB.')
 
         elif self.post_type == 'carousel':
-            if file_size_mb > 3000:
-                raise ValidationError('Slide post cannot be larger than 3 GB.')
+            if file_size_mb > 100:
+                raise ValidationError('Slide post cannot be larger than 100MB.')
 
     def save(self, *args, **kwargs):
         self.clean()
