@@ -1,93 +1,137 @@
-# nex-server
-🚀 Nex Backend - The Power Behind Our Social Network!
-Welcome to Nex Backend! 🎉 This is the core engine of our fast, secure, and scalable social network. Built with Django and Django REST Framework (DRF), it provides a powerful API for managing users, posts, likes, comments, and more.
+# 🚀 Nex Backend
 
-⚡ Key Features
-✅ JWT Authentication (Signup, Login, Password Reset)
-✅ Post Upload & Management (Images, Videos, Captions, etc.)
-✅ Like & Comment System for user interactions
-✅ Follow/Unfollow System to connect users
-✅ Smart Post Categorization without user input
-✅ Support for High-Quality Media (For premium users)
-✅ Optimized API for speed & efficiency
-✅ Live Streaming (Coming Soon!)
+Welcome to **Nex Backend**, the powerful core of our social networking platform! Built with **Django** and **Django REST Framework (DRF)**, this backend provides a robust and scalable API for managing users, posts, likes, comments, and more.
 
-🚀 Installation & Setup
-1. Clone the Repository
-bash
-Copy
-Edit
+---
+
+## 📌 Features
+
+| Feature               | Description |
+|----------------------|-------------|
+| ✅ **JWT Authentication** | Secure login, signup, and token-based authentication |
+| ✅ **Post Management** | Upload, edit, and delete posts (Images/Videos) |
+| ✅ **Like & Comment System** | Users can interact with posts |
+| ✅ **Follow/Unfollow System** | Connect with other users |
+| ✅ **Smart Categorization** | Posts are automatically categorized |
+| ✅ **High-Quality Media Support** | Premium users can upload 4K+ content |
+| ✅ **Optimized API** | Fast and efficient response times |
+| ✅ **Admin Panel** | Fully customized admin interface |
+
+---
+
+## 🛠 Installation & Setup
+
+### 1️⃣ **Clone the Repository**
+```bash
 git clone https://github.com/yourusername/nex-backend.git
 cd nex-backend
-2. Create & Activate Virtual Environment
-bash
-Copy
-Edit
+```
+
+### 2️⃣ **Create & Activate Virtual Environment**
+```bash
 python -m venv env
 source env/bin/activate  # macOS/Linux
 env\Scripts\activate  # Windows
-3. Install Dependencies
-bash
-Copy
-Edit
+```
+
+### 3️⃣ **Install Dependencies**
+```bash
 pip install -r requirements.txt
-4. Apply Migrations
-bash
-Copy
-Edit
+```
+
+### 4️⃣ **Apply Migrations**
+```bash
 python manage.py migrate
-5. Create a Superuser (Admin Panel Access)
-bash
-Copy
-Edit
+```
+
+### 5️⃣ **Create a Superuser (Admin Panel Access)**
+```bash
 python manage.py createsuperuser
-6. Run the Development Server
-bash
-Copy
-Edit
+```
+
+### 6️⃣ **Run the Development Server**
+```bash
 python manage.py runserver 0.0.0.0:8000
-🔥 API Endpoints
-📌 Authentication
-🔹 POST /api/auth/register/ → Register a new user
-🔹 POST /api/auth/login/ → Login & obtain a token
-🔹 POST /api/auth/logout/ → Logout user
+```
 
-📌 User Management
-🔹 GET /api/users/{username}/ → Get user profile
-🔹 POST /api/users/follow/{username}/ → Follow a user
+---
 
-📌 Posts
-🔹 GET /api/posts/ → Get all posts
-🔹 POST /api/posts/create/ → Create a new post
-🔹 DELETE /api/posts/{id}/ → Delete a post
+## 🔥 API Endpoints
 
-📌 Likes & Comments
-🔹 POST /api/posts/{id}/like/ → Like a post
-🔹 POST /api/posts/{id}/comment/ → Add a comment
+### **Authentication**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/auth/register/` | Register a new user |
+| `POST` | `/api/auth/login/` | Login and obtain a JWT token |
+| `POST` | `/api/auth/logout/` | Logout the user |
 
-🔐 Authentication & Security
-JWT Authentication ensures user security.
-APIs are designed to keep user data safe and protected.
-Rate Limiting will be added soon to prevent abuse.
-📌 Upcoming Features
-✅ Live Streaming for Users
-✅ Push Notifications for New Activity
-✅ Direct Messaging & Chat System
-✅ AI-Powered Post Recommendations
-✅ Stories Feature
+### **User Management**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/users/{username}/` | Retrieve user profile |
+| `POST` | `/api/users/follow/{username}/` | Follow a user |
 
-🛠 Tech Stack
-🔹 Django & Django REST Framework
-🔹 PostgreSQL (or SQLite for development)
-🔹 Celery + Redis for background tasks
-🔹 JWT Authentication for user security
+### **Posts**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/posts/` | Get all posts |
+| `POST` | `/api/posts/create/` | Create a new post |
+| `DELETE` | `/api/posts/{id}/` | Delete a post |
 
-🤝 Contributing
-Want to help? Feel free to submit a Pull Request (PR) or open an Issue! 😊
+### **Likes & Comments**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/posts/{id}/like/` | Like a post |
+| `POST` | `/api/posts/{id}/comment/` | Add a comment |
 
-📌 Contact Us:
-🔹 Email: support@nex.com
-🔹 Telegram: @nexsupport
-🔹 Instagram: @nex.app
+---
 
-❤️ Thank you for supporting Nex! Let’s build something great! 🚀🔥
+## 🔐 Security & Authentication
+- Uses **JWT Authentication** for user sessions.
+- **Role-Based Access Control (RBAC)** for different user levels.
+- Secure **API Rate Limiting** to prevent abuse.
+
+---
+
+## 🚀 Upcoming Features
+
+| Feature | Status |
+|---------|--------|
+| 🔜 Live Streaming | Coming Soon |
+| 🔜 Push Notifications | Coming Soon |
+| 🔜 Direct Messaging | Coming Soon |
+| 🔜 AI-Powered Post Recommendations | Coming Soon |
+| 🔜 Stories Feature | Coming Soon |
+
+---
+
+## 💻 Tech Stack
+| Technology | Purpose |
+|------------|---------|
+| **Django** | Backend Framework |
+| **Django REST Framework** | API Development |
+| **PostgreSQL** | Database |
+| **Celery + Redis** | Background Tasks |
+| **JWT Authentication** | Secure Authentication |
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions from the community! Feel free to submit a **Pull Request (PR)** or open an **Issue**.
+
+### 🛠 Contribution Steps
+1. Fork the repo & create a new branch.
+2. Make your changes and ensure everything works.
+3. Submit a **Pull Request (PR)** for review.
+
+---
+
+## 📌 Contact & Support
+
+📧 **Email:** support@nex.com  
+💬 **Telegram:** @nexsupport  
+📸 **Instagram:** @nex.app  
+
+**❤️ Thanks for supporting Nex! Let's build something amazing! 🚀🔥**
+
