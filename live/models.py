@@ -1,121 +1,320 @@
 from django.db import models
-from user.models import User
-from datetime import timedelta
+from django.conf import settings
+from django.core.validators import MinLengthValidator, MaxLengthValidator
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+from django.urls import reverse
+from django.db.models import Q, F, Count
+
+import uuid
+from datetime import timedelta
 
 
-class Stream(models.Model):
-    """
-    This model represents a live stream on the platform. It stores information about the stream,
-    such as the stream's key, title, start and end times, quality, and whether it is active.
-    The model also tracks user-specific information and provides functionality for auto-deletion
-    of streams based on selected time frames (12h, 24h, 72h).
-    """
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='streams')
-    stream_key = models.CharField(max_length=255, unique=True)
-    stream_title = models.CharField(max_length=255)
-    start_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    end_time = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    is_active = models.BooleanField(default=True)
+class BaseModel(models.Model):
+    """Base model for all models with common fields."""
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
 
-    quality = models.CharField(
-        max_length=20,
-        choices=[('1080p', '1080p'), ('720p', '720p'), ('480p', '480p')],
-        default='1080p'
+    class Meta:
+        abstract = True
+
+    def soft_delete(self):
+        """Soft delete the object instead of permanent deletion."""
+        self.is_deleted = True
+        self.save()
+
+    def restore(self):
+        """Restore a soft-deleted object."""
+        self.is_deleted = False
+        self.save()
+
+
+class StreamManager(models.Manager):
+    """Custom manager for Stream model."""
+    
+    def active(self):
+        """Return only active streams."""
+        return self.filter(is_active=True, is_deleted=False)
+    
+    def popular(self):
+        """Return streams ordered by popularity."""
+        return self.annotate(
+            popularity=Count('likes') + Count('comments') * 2 + F('viewer_count')
+        ).order_by('-popularity')
+    
+    def recent(self):
+        """Return recent streams within last 24 hours."""
+        yesterday = timezone.now() - timedelta(days=1)
+        return self.filter(created_at__gte=yesterday)
+
+
+class Stream(BaseModel):
+    """Model for live streaming sessions."""
+    
+    class StreamStatus(models.TextChoices):
+        PLANNED = 'PL', _('Planned')
+        LIVE = 'LV', _('Live')
+        ENDED = 'EN', _('Ended')
+        SUSPENDED = 'SP', _('Suspended')
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='streams'
+    )
+    stream_key = models.UUIDField(
+        unique=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+    stream_title = models.CharField(
+        max_length=200,
+        validators=[
+            MinLengthValidator(3),
+            MaxLengthValidator(200)
+        ]
+    )
+    description = models.TextField(
+        blank=True,
+        max_length=1000
+    )
+    thumbnail = models.ImageField(
+        upload_to='stream_thumbnails/',
+        null=True,
+        blank=True
+    )
+    is_active = models.BooleanField(default=False)
+    status = models.CharField(
+        max_length=2,
+        choices=StreamStatus.choices,
+        default=StreamStatus.PLANNED
+    )
+    scheduled_start = models.DateTimeField(null=True, blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+    viewer_count = models.PositiveIntegerField(default=0)
+    max_viewers = models.PositiveIntegerField(default=0)
+    tags = models.ManyToManyField('StreamTag', blank=True)
+    category = models.ForeignKey(
+        'StreamCategory',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
     )
 
-    password = models.CharField(max_length=255, null=True, blank=True)
+    objects = StreamManager()
 
-    view_count = models.IntegerField(default=0)
-    video_duration = models.IntegerField(default=0)
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['is_active', 'status']),
+            models.Index(fields=['user', 'created_at']),
+        ]
 
-    auto_delete_time = models.CharField(
-        max_length=10,
-        choices=[('12h', '12 hours'), ('24h', '24 hours'), ('72h', '72 hours')],
-        default='24h'
-    )
+    def __str__(self):
+        return f"{self.stream_title} by {self.user.username}"
 
-    def get_end_time(self):
-        if not self.is_active:
-            start_time = self.start_time if self.start_time else timezone.now()
-            return start_time + timedelta(hours=24)
+    def clean(self):
+        """Validate stream data."""
+        if self.scheduled_start and self.scheduled_start < timezone.now():
+            raise ValidationError({
+                'scheduled_start': _('Scheduled time cannot be in the past')
+            })
+
+    def start_stream(self):
+        """Start the stream."""
+        if self.status != self.StreamStatus.PLANNED:
+            raise ValidationError(_('Stream can only be started from planned status'))
+        
+        self.is_active = True
+        self.status = self.StreamStatus.LIVE
+        self.started_at = timezone.now()
+        self.save()
+
+    def end_stream(self):
+        """End the stream."""
+        self.is_active = False
+        self.status = self.StreamStatus.ENDED
+        self.ended_at = timezone.now()
+        self.save()
+
+    def update_viewer_count(self, count):
+        """Update current and max viewer count."""
+        self.viewer_count = count
+        if count > self.max_viewers:
+            self.max_viewers = count
+        self.save()
+
+    def get_absolute_url(self):
+        """Get URL for stream detail view."""
+        return reverse('stream-detail', kwargs={'pk': self.pk})
+
+    @property
+    def duration(self):
+        """Calculate stream duration."""
+        if self.started_at and self.ended_at:
+            return self.ended_at - self.started_at
         return None
 
-    def get_auto_delete_time(self):
-        """
-        Calculate the auto-delete time based on the selected option (12h, 24h, 72h).
-        Returns the expected deletion time.
-        """
-        if not self.is_active:
-            if self.auto_delete_time == '12h':
-                return self.start_time + timedelta(hours=12)
-            elif self.auto_delete_time == '24h':
-                return self.start_time + timedelta(hours=24)
-            elif self.auto_delete_time == '72h':
-                return self.start_time + timedelta(hours=72)
-            return self.start_time
-        else:
-            return None
 
-    def activate(self):
-        self.is_active = True
+class Message(BaseModel):
+    """Model for stream chat messages."""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='messages'
+    )
+    stream = models.ForeignKey(
+        Stream,
+        on_delete=models.CASCADE,
+        related_name='messages'
+    )
+    content = models.TextField(
+        validators=[MaxLengthValidator(1000)]
+    )
+    is_pinned = models.BooleanField(default=False)
+    is_moderated = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['created_at']
+        indexes = [
+            models.Index(fields=['stream', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username}: {self.content[:50]}"
+
+
+class Like(BaseModel):
+    """Model for stream likes."""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='likes'
+    )
+    stream = models.ForeignKey(
+        Stream,
+        on_delete=models.CASCADE,
+        related_name='likes'
+    )
+
+    class Meta:
+        unique_together = ['user', 'stream']
+        indexes = [
+            models.Index(fields=['stream', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} likes {self.stream.stream_title}"
+
+
+class Comment(BaseModel):
+    """Model for stream comments."""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='comments'
+    )
+    stream = models.ForeignKey(
+        Stream,
+        on_delete=models.CASCADE,
+        related_name='comments'
+    )
+    content = models.TextField(
+        validators=[
+            MinLengthValidator(1),
+            MaxLengthValidator(500)
+        ]
+    )
+    parent = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='replies'
+    )
+    is_edited = models.BooleanField(default=False)
+    edited_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['stream', 'created_at']),
+            models.Index(fields=['parent', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username}: {self.content[:50]}"
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            self.is_edited = True
+            self.edited_at = timezone.now()
+        super().save(*args, **kwargs)
+
+
+class StreamTag(BaseModel):
+    """Model for stream tags."""
+    name = models.CharField(max_length=50, unique=True)
+    slug = models.SlugField(unique=True)
+    description = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class StreamCategory(BaseModel):
+    """Model for stream categories."""
+    name = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(unique=True)
+    description = models.TextField(blank=True)
+    icon = models.ImageField(
+        upload_to='category_icons/',
+        null=True,
+        blank=True
+    )
+    parent = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='subcategories'
+    )
+
+    class Meta:
+        verbose_name_plural = "categories"
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class StreamStatistics(BaseModel):
+    """Model for tracking stream statistics."""
+    stream = models.OneToOneField(
+        Stream,
+        on_delete=models.CASCADE,
+        related_name='statistics'
+    )
+    total_viewers = models.PositiveIntegerField(default=0)
+    peak_viewers = models.PositiveIntegerField(default=0)
+    average_viewers = models.FloatField(default=0.0)
+    total_likes = models.PositiveIntegerField(default=0)
+    total_comments = models.PositiveIntegerField(default=0)
+    engagement_rate = models.FloatField(default=0.0)
+
+    def __str__(self):
+        return f"Statistics for {self.stream.stream_title}"
+
+    def update_statistics(self):
+        """Update stream statistics."""
+        self.total_likes = self.stream.likes.count()
+        self.total_comments = self.stream.comments.count()
+        if self.total_viewers > 0:
+            self.engagement_rate = (self.total_likes + self.total_comments) / self.total_viewers
         self.save()
-
-    def deactivate(self):
-        self.is_active = False
-        self.end_time = timezone.now()
-        self.save()
-
-    def increment_view_count(self):
-        self.view_count += 1
-        self.save()
-
-    def decrement_view_count(self):
-        if self.view_count > 0:
-            self.view_count -= 1
-            self.save()
-
-    def __str__(self):
-        return self.stream_title
-
-
-class Message(models.Model):
-    """
-    Represents a message sent by a user during a live stream.
-    This model links the message to both the stream and the user.
-    It also records the timestamp when the message was sent.
-    """
-    stream = models.ForeignKey(Stream, related_name='messages', on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    content = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Message by {self.user.username} on {self.stream.stream_title}"
-
-
-class Like(models.Model):
-    """
-    Represents a like action performed by a user on a specific live stream.
-    This model tracks which user liked which stream.
-    """
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='live_likes')
-    stream = models.ForeignKey(Stream, related_name='likes', on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"{self.user.username} liked {self.stream.stream_title}"
-
-
-class Comment(models.Model):
-    """
-    Represents a comment made by a user on a live stream.
-    This model captures the user's comment content, links it to the specific stream,
-    and records the time the comment was made.
-    """
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='live_comments')
-    stream = models.ForeignKey(Stream, related_name='comments', on_delete=models.CASCADE)
-    content = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Comment by {self.user.username} on {self.stream.stream_title}"

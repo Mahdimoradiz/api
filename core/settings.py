@@ -39,7 +39,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'import_export',
+    'rangefilter',
     'corsheaders',
+    'django_filters',
+    'drf_yasg',
     'captcha',
     'axes',
     # apps
@@ -200,13 +204,6 @@ REST_FRAMEWORK = {
 AUTH_USER_MODEL = "user.User"
 
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'your_email@gmail.com'  
-EMAIL_HOST_PASSWORD = 'your_email_password'  
-DEFAULT_FROM_EMAIL = 'your_email@gmail.com'
 
 
 AUTHENTICATION_BACKENDS = [
@@ -216,4 +213,47 @@ AUTHENTICATION_BACKENDS = [
 
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
+
+ASGI_APPLICATION = 'your_project.asgi.application'
+
+MAX_LOGIN_ATTEMPTS = 5
+MAX_SIGNUP_ATTEMPTS = 3
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'your@email.com'
+EMAIL_HOST_PASSWORD = 'your-password'
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
+
+
+ACCOUNT_REACTIVATION_DAYS = 30  
+TWO_FACTOR_TIMEOUT = 300 
+
+# تنظیمات برنامه
+APP_NAME = 'NexSocial'
+API_VERSION = '1.0.0'
+
+
+
+DEFAULT_FROM_EMAIL = 'your@email.com'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'your@email.com'
+EMAIL_HOST_PASSWORD = 'your-password'
 

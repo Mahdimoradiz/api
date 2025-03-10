@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 from .models import Profile
-from profiles.models import User,Block
+from profiles.models import User, Block
 from rest_framework import serializers, viewsets
 from .abbreviation import NumberUtils
 from post.models import Post
